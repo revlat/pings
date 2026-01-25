@@ -166,7 +166,7 @@ func main() {
 
 	// Argument-Parsing
 	if len(os.Args) < 2 {
-		fmt.Println("Error: No IP addresses or file specified\n")
+		fmt.Println("Error: No IP addresses or file specified")
 		printHelp()
 		return
 	}
@@ -184,13 +184,13 @@ func main() {
 			if i+1 < len(os.Args) {
 				sortMode = os.Args[i+1]
 				if sortMode != "online" && sortMode != "offline" {
-					fmt.Printf("Error: Invalid sort mode '%s'. Use 'online' or 'offline'\n\n", sortMode)
+					fmt.Printf("Error: Invalid sort mode '%s'. Use 'online' or 'offline'\n", sortMode)
 					printHelp()
 					return
 				}
 				i++ // Überspringe das nächste Argument (Sort-Modus)
 			} else {
-				fmt.Println("Error: --sort requires an argument (online or offline)\n")
+				fmt.Println("Error: --sort requires an argument (online or offline)")
 				printHelp()
 				return
 			}
@@ -200,7 +200,7 @@ func main() {
 	}
 
 	if len(args) == 0 {
-		fmt.Println("Error: No IP addresses or file specified\n")
+		fmt.Println("Error: No IP addresses or file specified")
 		printHelp()
 		return
 	}
