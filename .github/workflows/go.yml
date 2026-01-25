@@ -39,18 +39,12 @@ jobs:
         fi
         go build -v -o ${OUTPUT_NAME} .
         ls -lh ${OUTPUT_NAME}
-        # Rename for release (keeping platform info for release artifacts)
-        RELEASE_NAME=pings-${{ matrix.goos }}-${{ matrix.goarch }}
-        if [ "${{ matrix.goos }}" == "windows" ]; then
-          RELEASE_NAME="${RELEASE_NAME}.exe"
-        fi
-        cp ${OUTPUT_NAME} ${RELEASE_NAME}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: pings-${{ matrix.goos }}-${{ matrix.goarch }}
-        path: pings-*
+        path: pings${{ matrix.goos == 'windows' && '.exe' || '' }}
 
     - name: Test
       run: go test -v ./...
@@ -69,8 +63,21 @@ jobs:
       with:
         path: artifacts
 
+    - name: Prepare release files
+      run: |
+        mkdir release
+        for dir in artifacts/pings-*; do
+          platform=$(basename "$dir")
+          if [[ "$platform" == *"windows"* ]]; then
+            cp "$dir/pings.exe" "release/${platform}.exe"
+          else
+            cp "$dir/pings" "release/${platform}"
+          fi
+        done
+        ls -lh release/
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: artifacts/**/*
+        files: release/*
         generate_release_notes: true
