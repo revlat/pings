@@ -69,9 +69,9 @@ jobs:
         for dir in artifacts/pings-*; do
           platform=$(basename "$dir")
           if [[ "$platform" == *"windows"* ]]; then
-            cp "$dir/pings.exe" "release/${platform}.exe"
+            cd "$dir" && zip "../../release/${platform}.zip" pings.exe && cd -
           else
-            cp "$dir/pings" "release/${platform}"
+            cd "$dir" && tar -czf "../../release/${platform}.tar.gz" pings && cd -
           fi
         done
         ls -lh release/

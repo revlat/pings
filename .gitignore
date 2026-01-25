@@ -18,3 +18,10 @@ Thumbs.db
 *.test
 *.out
 vendor/
+
+# Claude
+.claude/
+.mcp.json
+
+# Build
+build/

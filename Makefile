@@ -1,5 +1,8 @@
 .PHONY: build build-all clean
 
+# Force Bash shell (wichtig für Windows make)
+SHELL := /bin/bash
+
 # Detect OS
 ifeq ($(OS),Windows_NT)
 	BINARY_NAME=pings.exe
