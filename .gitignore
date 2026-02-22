@@ -1,8 +1,10 @@
-# Binaries
-pings.exe
-pings
-main
-*.exe
+# Binaries (nur im Root, nicht als Verzeichnis)
+/pings.exe
+/pings
+/pings-gui.exe
+/pings-gui
+/main
+/*.exe
 
 # Editor configs
 *.sublime-project

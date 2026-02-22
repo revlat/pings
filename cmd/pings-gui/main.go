@@ -117,27 +117,27 @@ func parseSetupInput(ipText, intervalText string) (ips []string, interval int) {
 // showSetup zeigt das Eingabe-Formular wenn keine Parameter übergeben wurden.
 func showSetup(w fyne.Window) {
 	ipEntry := widget.NewMultiLineEntry()
-	ipEntry.SetPlaceHolder("192.168.1.1\n192.168.1.2\n...\noder Pfad zu einer Datei")
+	ipEntry.SetPlaceHolder("192.168.1.1\n192.168.1.2\n...\nor path to a file")
 	ipEntry.SetMinRowsVisible(5)
 
 	intervalEntry := widget.NewEntry()
 	intervalEntry.SetText("5")
 	intervalEntry.Validator = func(s string) error {
 		if _, err := strconv.Atoi(strings.TrimSpace(s)); err != nil {
-			return fmt.Errorf("nur Zahlen erlaubt")
+			return fmt.Errorf("numbers only")
 		}
 		return nil
 	}
 
 	form := widget.NewForm(
-		widget.NewFormItem("IP-Adressen / Datei", ipEntry),
-		widget.NewFormItem("Intervall (Sekunden)", intervalEntry),
+		widget.NewFormItem("IP Addresses / File", ipEntry),
+		widget.NewFormItem("Interval (seconds)", intervalEntry),
 	)
 
 	startBtn := widget.NewButton("Start", func() {
 		ips, interval := parseSetupInput(ipEntry.Text, intervalEntry.Text)
 		if len(ips) == 0 {
-			dialog.ShowError(fmt.Errorf("bitte mindestens eine IP-Adresse eingeben"), w)
+			dialog.ShowError(fmt.Errorf("please enter at least one IP address"), w)
 			return
 		}
 		startMonitoring(w, ips, interval)
