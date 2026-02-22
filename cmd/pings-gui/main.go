@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -44,28 +46,22 @@ EXAMPLES
 `)
 }
 
+// parseArgs parses command-line arguments. Returns ok=false if no args were
+// given (caller should show setup UI) or on error (already printed).
 func parseArgs() (ips []string, interval int, ok bool) {
 	interval = 5
-
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Error: No IP addresses or file specified")
-		printHelp()
-		return nil, 0, false
-	}
 
 	args := []string{}
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 		if arg == "-h" || arg == "--help" {
 			printHelp()
-			return nil, 0, false
+			os.Exit(0)
 		}
 		args = append(args, arg)
 	}
 
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Error: No IP addresses or file specified")
-		printHelp()
 		return nil, 0, false
 	}
 
@@ -94,6 +90,66 @@ func parseArgs() (ips []string, interval int, ok bool) {
 	return ips, interval, true
 }
 
+// parseSetupInput parses the raw text from the setup form.
+func parseSetupInput(ipText, intervalText string) (ips []string, interval int) {
+	interval = 5
+	if i, err := strconv.Atoi(strings.TrimSpace(intervalText)); err == nil && i > 0 {
+		interval = i
+	}
+
+	for _, line := range strings.Split(ipText, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			ips = append(ips, line)
+		}
+	}
+
+	// Einzelner Eintrag der auf eine Datei zeigt → aus Datei laden
+	if len(ips) == 1 {
+		if loaded, err := pinger.LoadIPsFromFile(ips[0]); err == nil {
+			ips = loaded
+		}
+	}
+
+	return ips, interval
+}
+
+// showSetup zeigt das Eingabe-Formular wenn keine Parameter übergeben wurden.
+func showSetup(w fyne.Window) {
+	ipEntry := widget.NewMultiLineEntry()
+	ipEntry.SetPlaceHolder("192.168.1.1\n192.168.1.2\n...\noder Pfad zu einer Datei")
+	ipEntry.SetMinRowsVisible(5)
+
+	intervalEntry := widget.NewEntry()
+	intervalEntry.SetText("5")
+	intervalEntry.Validator = func(s string) error {
+		if _, err := strconv.Atoi(strings.TrimSpace(s)); err != nil {
+			return fmt.Errorf("nur Zahlen erlaubt")
+		}
+		return nil
+	}
+
+	form := widget.NewForm(
+		widget.NewFormItem("IP-Adressen / Datei", ipEntry),
+		widget.NewFormItem("Intervall (Sekunden)", intervalEntry),
+	)
+
+	startBtn := widget.NewButton("Start", func() {
+		ips, interval := parseSetupInput(ipEntry.Text, intervalEntry.Text)
+		if len(ips) == 0 {
+			dialog.ShowError(fmt.Errorf("bitte mindestens eine IP-Adresse eingeben"), w)
+			return
+		}
+		startMonitoring(w, ips, interval)
+	})
+	startBtn.Importance = widget.HighImportance
+
+	content := container.NewPadded(container.NewVBox(form, startBtn))
+	w.SetContent(content)
+	w.Resize(fyne.NewSize(400, content.MinSize().Height))
+	w.CenterOnScreen()
+}
+
 func applySortedStates(states []pinger.HostState, col int, asc bool) []pinger.HostState {
 	result := make([]pinger.HostState, len(states))
 	copy(result, states)
@@ -104,7 +160,6 @@ func applySortedStates(states []pinger.HostState, col int, asc bool) []pinger.Ho
 		case 0:
 			less = a.IP < b.IP
 		case 1:
-			// asc = Online zuerst (true > false)
 			less = a.Online && !b.Online
 		case 2:
 			less = a.OkCount < b.OkCount
@@ -134,14 +189,9 @@ func applySortedStates(states []pinger.HostState, col int, asc bool) []pinger.Ho
 	return result
 }
 
-func main() {
-	ips, interval, ok := parseArgs()
-	if !ok {
-		return
-	}
-
-	a := app.New()
-	w := a.NewWindow(fmt.Sprintf("pings-gui  (interval: %ds)", interval))
+// startMonitoring ersetzt den Fensterinhalt durch die Monitoring-Tabelle.
+func startMonitoring(w fyne.Window, ips []string, interval int) {
+	w.SetTitle(fmt.Sprintf("pings-gui  (interval: %ds)", interval))
 
 	var mu sync.Mutex
 	var currentStates []pinger.HostState
@@ -152,9 +202,7 @@ func main() {
 	colorOffline := color.NRGBA{R: 220, G: 50, B: 50, A: 255}
 	colorWarn := color.NRGBA{R: 220, G: 170, B: 0, A: 255}
 
-	// table wird vor NewTable deklariert, damit OnTapped darauf zugreifen kann.
 	var table *widget.Table
-
 	table = widget.NewTable(
 		func() (int, int) {
 			mu.Lock()
@@ -289,5 +337,21 @@ func main() {
 
 	w.SetContent(container.NewBorder(nil, nil, nil, nil, table))
 	w.Resize(fyne.NewSize(700, float32(40+len(ips)*30)))
+}
+
+func main() {
+	a := app.New()
+	w := a.NewWindow("pings-gui")
+
+	if len(os.Args) >= 2 {
+		ips, interval, ok := parseArgs()
+		if !ok {
+			return
+		}
+		startMonitoring(w, ips, interval)
+	} else {
+		showSetup(w)
+	}
+
 	w.ShowAndRun()
 }
