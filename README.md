@@ -1,6 +1,8 @@
 # pings
 
-A lightweight command-line tool for monitoring multiple hosts with continuous ping checks and real-time status updates.
+🇬🇧 [English](README.md) | 🇩🇪 [Deutsch](README_DE.md)
+
+A lightweight tool for monitoring multiple hosts with continuous ping checks and real-time status updates — available as a **CLI** and a **graphical GUI**.
 
 ## Features
 
@@ -10,11 +12,11 @@ A lightweight command-line tool for monitoring multiple hosts with continuous pi
 - ⏱️ **Latency measurement** - Display round-trip time of the last successful ping
 - 📈 **Uptime percentage** - Calculate availability over time
 - 🔄 **Status change tracking** - Show when hosts went online/offline
-- 🔀 **Flexible sorting** - Sort output by online or offline hosts first
 - 🎨 **Color-coded output** - Green for online, red for offline, yellow warnings
 - 📁 **File input support** - Read IP addresses from a file
 - ⚙️ **Configurable interval** - Adjust scan frequency (default: 5 seconds)
 - 🖥️ **Cross-platform** - Works on Windows, Linux, and macOS
+- 🪟 **GUI included** - Optional graphical interface with sortable table (`pings-gui`)
 
 ## Installation
 
@@ -22,10 +24,25 @@ A lightweight command-line tool for monitoring multiple hosts with continuous pi
 
 Download the latest release for your platform from the [Releases page](https://github.com/revlat/pings/releases).
 
-Each release provides archives for multiple platforms:
-- **Windows**: `pings-windows-amd64.zip` or `pings-windows-arm64.zip` (contains `pings.exe`)
-- **Linux**: `pings-linux-amd64.tar.gz` or `pings-linux-arm64.tar.gz` (contains `pings`)
-- **macOS**: `pings-darwin-amd64.tar.gz` (Intel) or `pings-darwin-arm64.tar.gz` (Apple Silicon, contains `pings`)
+**CLI (`pings`)** — pure Go, no dependencies:
+
+| Platform | Archive | Binary |
+|----------|---------|--------|
+| Windows x64 | `pings-windows-amd64.zip` | `pings.exe` |
+| Windows ARM64 | `pings-windows-arm64.zip` | `pings.exe` |
+| Linux x64 | `pings-linux-amd64.tar.gz` | `pings` |
+| Linux ARM64 | `pings-linux-arm64.tar.gz` | `pings` |
+| macOS Intel | `pings-darwin-amd64.tar.gz` | `pings` |
+| macOS Apple Silicon | `pings-darwin-arm64.tar.gz` | `pings` |
+
+**GUI (`pings-gui`)** — requires a display:
+
+| Platform | Archive | Binary |
+|----------|---------|--------|
+| Windows x64 | `pings-gui-windows-amd64.zip` | `pings-gui.exe` |
+| Linux x64 | `pings-gui-linux-amd64.tar.gz` | `pings-gui` |
+| Linux ARM64 | `pings-gui-linux-arm64.tar.gz` | `pings-gui` |
+| macOS Apple Silicon | `pings-gui-darwin-arm64.tar.gz` | `pings-gui` |
 
 Extract the archive and run the binary directly.
 
@@ -36,12 +53,11 @@ Requires [Go 1.24+](https://go.dev/dl/):
 ```sh
 git clone https://github.com/revlat/pings.git
 cd pings
-go build -o pings .
+make build        # CLI binary for current OS
+make build-gui    # GUI binary for current OS (see dependencies below)
 ```
 
-On Windows, this creates `pings.exe`. On Linux/macOS, it creates `pings`.
-
-## Usage
+## CLI Usage
 
 ```
 pings [OPTIONS] IP [IP ...] [INTERVAL]
@@ -67,61 +83,100 @@ pings 192.168.1.1 192.168.1.254 10
 pings -s offline 192.168.1.1 192.168.1.2 192.168.1.3
 ```
 
-**Sort with online hosts first:**
-```sh
-pings --sort online 192.168.1.1 192.168.1.2
-```
-
 **Read IPs from a file:**
 ```sh
-# ip-list.txt contains one IP per line
 pings ip-list.txt
 ```
 
-**File input with sorting and custom interval:**
-```sh
-pings -s offline ip-list.txt 15
-```
+## CLI Output Example
 
-## Output Example
-
-![Example Output](example.png)
+![CLI Output](example.png)
 
 The output shows:
-- **Green "Online"** - Host is reachable
-- **Red "Offline"** - Host is unreachable
+- **Green "Online"** / **Red "Offline"** - Current reachability
 - **Counters** - `(5 ok / 0 !ok)` tracks successful and failed pings over time
-- **Latency** - `12ms` shows round-trip time of the **last successful ping** (or `--` if currently offline)
-- **Uptime** - `98.5% up` displays availability percentage since monitoring started
-- **Status change** - Shows when status last changed:
-  - `(down: 5s ago)` - Currently online, was offline 5 seconds ago
-  - `(up: 2m 30s ago)` - Currently offline, was online 2 minutes and 30 seconds ago
-  - `(down: 1h 5m 12s ago)` - Currently online, was offline 1 hour, 5 minutes, and 12 seconds ago
-  - No indicator if status never changed
-- **Yellow highlighting** - Indicates at least one failed ping for that host
-- **Sorting** - Use `-s offline` to show offline hosts first, or `-s online` for online hosts first (default: original order)
+- **Latency** - `12ms` round-trip time of the last successful ping (or `--` if offline)
+- **Uptime** - `98.5% up` availability percentage since monitoring started
+- **Status change** - `(down: 5s ago)` / `(up: 2m 30s ago)` — time since last status flip
+- **Yellow highlighting** - At least one failed ping for that host
+- **Sorting** - `-s offline` / `-s online` to reorder hosts
+
+## pings-gui
+
+`pings-gui` is a graphical frontend with the same monitoring engine as the CLI. It opens a window with a live-updating table.
+
+### GUI Usage
+
+`pings-gui` accepts the same arguments as `pings`.
+
+```
+pings-gui [OPTIONS] IP [IP ...] [INTERVAL]
+pings-gui [OPTIONS] FILE [INTERVAL]
+```
+
+When launched **without arguments**, a setup form is shown where you can enter IP addresses and the scan interval interactively:
+
+![GUI Setup Form](example-gui-start.png)
+
+After clicking **Start** (or passing IPs as arguments), the monitoring table opens:
+
+![GUI Monitoring Table](example-gui-run.png)
+
+The table columns can be **sorted by clicking any header** — click again to reverse the order:
+
+| Column | Description |
+|--------|-------------|
+| IP | Host address |
+| Status | Online (green) / Offline (red) |
+| OK | Successful ping count |
+| !OK | Failed ping count (yellow if > 0) |
+| Latency | Last round-trip time |
+| Uptime | Availability percentage |
+| Last Change | Time since last status change |
+
+### Building pings-gui
+
+`pings-gui` uses [Fyne](https://fyne.io/) and requires **CGO** (a C compiler). Install the required system libraries first:
+
+**Linux (Debian/Ubuntu):**
+```sh
+sudo apt-get install libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev \
+  libxinerama-dev libxi-dev libxxf86vm-dev
+```
+
+**Linux (openSUSE):**
+```sh
+sudo zypper install libX11-devel Mesa-libGL-devel libXrandr-devel \
+  libXcursor-devel libXinerama-devel libXi-devel libXxf86vm-devel
+```
+
+**Windows:** Install [MinGW-w64](https://www.mingw-w64.org/) (e.g. via MSYS2 or TDM-GCC) to provide `gcc`.
+
+**macOS:** Xcode Command Line Tools are sufficient:
+```sh
+xcode-select --install
+```
+
+Then build:
+```sh
+make build-gui
+```
 
 ## Notes
 
-- **Windows users**: Use **PowerShell** or **Windows Terminal** for color support. `cmd.exe` may not display ANSI colors correctly.
-- The tool clears the console between updates to provide a clean, real-time view.
+- **Windows users (CLI)**: Use **PowerShell** or **Windows Terminal** for color support. `cmd.exe` may not display ANSI colors correctly.
+- The CLI clears the console between updates to provide a clean, real-time view.
 
 ## Building for Multiple Platforms
 
 Using the included `Makefile`:
 
 ```sh
-make build          # Build for current OS
-make build-all      # Build for all platforms (output in build/)
+make build          # CLI for current OS
+make build-gui      # GUI for current OS
+make build-all      # CLI for all platforms (output in build/)
+make build-all-gui  # GUI for current OS into build/
 make clean          # Clean build artifacts
-```
-
-Or manually with Go:
-
-```sh
-GOOS=windows GOARCH=amd64 go build -o pings-windows-amd64.exe .
-GOOS=linux GOARCH=amd64 go build -o pings-linux-amd64 .
-GOOS=darwin GOARCH=arm64 go build -o pings-darwin-arm64 .
 ```
 
 ## Technical Details
@@ -161,8 +216,3 @@ Therefore, this tool uses different detection methods per platform:
 ## License
 
 MIT License - See [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
